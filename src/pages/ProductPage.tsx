@@ -4,12 +4,10 @@ import { formatPrice } from "../data/products";
 import Footer from "../components/Footer";
 import ImageZoom from "../components/ImageZoom";
 import OrderForm from "../components/OrderForm";
+import { useMeta } from "../hooks/useMeta";
 import { Route } from "../App";
 
-interface ProductPageProps {
-  slug: string;
-  navigate: (r: Route) => void;
-}
+interface ProductPageProps { slug: string; navigate: (r: Route) => void; }
 
 export default function ProductPage({ slug, navigate }: ProductPageProps) {
   const { getBySlug } = useStore();
@@ -17,6 +15,14 @@ export default function ProductPage({ slug, navigate }: ProductPageProps) {
   const [activeImg, setActiveImg] = useState(0);
   const [zoomOpen, setZoomOpen] = useState(false);
   const [orderOpen, setOrderOpen] = useState(false);
+
+  useMeta(product ? {
+    title: product.nombre,
+    description: product.descripcion || `${product.nombre} - ${formatPrice(product.precio)}. Pídelo en German Parra, Bogotá.`,
+    image: product.imagen,
+    url: `/producto/${product.slug}`,
+    type: "product",
+  } : {});
 
   if (!product) {
     return (

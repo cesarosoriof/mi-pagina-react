@@ -10,7 +10,7 @@ type Tab = "productos" | "crear" | "reordenar" | "configuracion";
 
 export default function AdminPanel({ navigate }: AdminPanelProps) {
   const { isAuthenticated, logout, changePassword } = useAuth();
-  const { products, updateProduct, deleteProduct, restoreProduct, createProduct, reorderProducts } = useStore();
+  const { products, updateProduct, deleteProduct, restoreProduct, createProduct, reorderProducts, resetToDefault } = useStore();
   const [tab, setTab] = useState<Tab>("productos");
   const [editId, setEditId] = useState<number | null>(null);
   const [toast, setToast] = useState("");
@@ -77,8 +77,8 @@ export default function AdminPanel({ navigate }: AdminPanelProps) {
         )}
         {tab === "crear" && (
           <CreateProductTab editId={editId} products={products}
-            onCreate={(data) => { createProduct(data); showToast("✓ Producto publicado"); setTab("productos"); }}
-            onUpdate={(id, data) => { updateProduct(id, data); showToast("✓ Guardado"); setEditId(null); setTab("productos"); }}
+            onCreate={async (data) => { await createProduct(data); showToast("✓ Producto publicado"); setTab("productos"); }}
+            onUpdate={async (id, data) => { await updateProduct(id, data); showToast("✓ Guardado"); setEditId(null); setTab("productos"); }}
             onCancel={() => { setEditId(null); setTab("productos"); }} />
         )}
         {tab === "reordenar" && (
@@ -94,6 +94,15 @@ export default function AdminPanel({ navigate }: AdminPanelProps) {
                 <button className="admin-btn primary" onClick={handlePasswordChange}>Actualizar</button>
               </div>
               {passMsg && <p className={`config-msg${passMsg.startsWith("✓") ? " ok" : " error"}`}>{passMsg}</p>}
+            </div>
+            <div className="config-card" style={{marginTop:"1.5rem", borderLeft:"3px solid #dc3545"}}>
+              <h3>Restablecer productos</h3>
+              <p style={{fontSize:"0.85rem",color:"var(--gris-texto)",marginBottom:"1rem"}}>Elimina todos los cambios y vuelve a los productos originales.</p>
+              <button className="admin-btn danger" onClick={() => {
+                if(window.confirm("Esto borrara todos los cambios. Continuar?")) {
+                  resetToDefault();
+                }
+              }}>Restablecer a valores originales</button>
             </div>
           </div>
         )}
@@ -238,8 +247,8 @@ function ReorderTab({ products, onReorder, showToast }: {
 // ── Create / Edit Tab ──
 function CreateProductTab({ editId, products, onCreate, onUpdate, onCancel }: {
   editId: number | null; products: Product[];
-  onCreate: (data: Omit<Product, "id" | "activo">) => void;
-  onUpdate: (id: number, data: Partial<Product>) => void;
+  onCreate: (data: Omit<Product, "id" | "activo">) => Promise<void>;
+  onUpdate: (id: number, data: Partial<Product>) => Promise<void>;
   onCancel: () => void;
 }) {
   const editing = editId !== null ? products.find((p) => p.id === editId) : null;
@@ -277,9 +286,9 @@ function CreateProductTab({ editId, products, onCreate, onUpdate, onCancel }: {
     galeria: galeriaPreview,
   });
 
-  const handleConfirm = () => {
+  const handleConfirm = async () => {
     const data = buildData();
-    if (editing) onUpdate(editing.id, data); else onCreate(data);
+    if (editing) await onUpdate(editing.id, data); else await onCreate(data);
   };
 
   return (
